@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="p4core">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/p4core.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
