@@ -10,8 +10,6 @@ class Joint constructor(
         private val maxAngle: Double = Math.PI / 2,
         private val minAngle: Double = -Math.PI / 2
 ) {
-
-
     private val canvas: PApplet = App.ref
     private val maxSpeed = 3.0
 

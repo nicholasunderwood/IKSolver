@@ -11,7 +11,6 @@ class Pose2d constructor(var pos: Vector2 = Vector2(), var theta: Double = 0.0){
         get() = pos.y
         set(value: Double) { pos.y = value }
 
-
     operator fun unaryMinus(): Pose2d = Pose2d(-pos, -theta)
 
     operator fun plus(other: Pose2d): Pose2d = Pose2d(pos + other.pos, theta + other.theta)
@@ -30,5 +29,4 @@ class Pose2d constructor(var pos: Vector2 = Vector2(), var theta: Double = 0.0){
     fun clone(): Pose2d {
         return Pose2d(x, y, theta)
     }
-
 }

@@ -5,14 +5,13 @@ import util.Vector2
 import kotlin.math.cos
 import kotlin.math.sin
 
-
 class Arm {
     val joints: Array<Joint>
     val dof: Int
         get() = joints.size
 
     private val canvas: PApplet = App.ref
-    public val maxLength: Double
+    val maxLength: Double
 
     constructor(vararg mJoints: Joint) {
         joints = mJoints as Array<Joint>
@@ -77,6 +76,6 @@ class Arm {
     companion object {
         const val jointRadius: Float = 10f
         private val canvas: PApplet = App.ref
-        public lateinit var base : Pose2d
+        lateinit var base : Pose2d
     }
 }
