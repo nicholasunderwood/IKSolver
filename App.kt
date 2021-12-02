@@ -17,6 +17,11 @@ class App : PApplet() {
     private var endEffector: Vector2 = Vector2();
     private var target: Vector2 = Vector2();
 
+    private val endEffectorD: Double = 3.0;
+    private val dX: Vector2 = Vector2(endEffectorD, 0.0)
+    private val dY: Vector2 = Vector2(0.0, -endEffectorD)
+    private var dTarget: Vector2 = Vector2()
+
 
     init {
         val width: Float = 800f
@@ -39,6 +44,8 @@ class App : PApplet() {
         rectMode(CORNERS)
         focused = true
         this.textAlign(CENTER, CENTER)
+
+        endEffector = arm.joints.last().endPose2d.pos
     }
 
     // Continuously draws and updates the application display window
@@ -47,12 +54,23 @@ class App : PApplet() {
         arm.tick(0.01)
         arm.draw()
 
-        if(!isDragging) return
-
-        fill(255f, 0f, 0f)
-        val j: Joint = activeJoint ?: return
         strokeWeight(0f)
+        fill(255f, 0f, 0f)
+        endEffector += dTarget
+        endEffector.draw(10f)
+
+//        var i = 0;
+//        val ty = arm.joints.sumByDouble { j -> i++; Math.cos(arm.joints.copyOfRange(0, i).sumByDouble{ it.position }) * j.length  }
+//        i = 0;
+//        val tx = arm.joints.sumByDouble { j -> i++; Math.sin(arm.joints.copyOfRange(0, i).sumByDouble{ it.position }) * j.length  }
+//
+//        Arm.base.pos.plus(Vector2(tx,-ty)).draw(20f);
+
+//        if(!isDragging) return
+
+//        val j: Joint = activeJoint ?: return
         circle((target.x).toFloat(), target.y.toFloat(), 10f)
+
     }
 
     override fun mousePressed(event: MouseEvent) {
@@ -82,6 +100,32 @@ class App : PApplet() {
         println(target.dot(j.endPose2d.pos - j.basePose2d.pos))
     }
 
+    override fun keyPressed() {
+        super.keyPressed()
+        if(keyCode == UP){
+            dTarget += dY
+        } else if(keyCode == DOWN){
+            dTarget -= dY
+        } else if(keyCode == RIGHT){
+            dTarget += dX
+        } else if(keyCode == LEFT){
+            dTarget -= dX
+        }
+    }
+
+    override fun keyReleased() {
+        super.keyReleased()
+        if(keyCode == UP){
+            dTarget -= dY
+        } else if(keyCode == DOWN){
+            dTarget += dY
+        } else if(keyCode == RIGHT){
+            dTarget -= dX
+        } else if(keyCode == LEFT){
+            dTarget += dX
+        }
+    }
+
     fun calcDTheta(target: Vector2, start: Vector2, base: Vector2): Double{
         return 0.0
     }
@@ -101,7 +145,6 @@ class App : PApplet() {
         fun initCanvas(args: Array<String>) {
             main("App")
         }
-
     }
 }
 

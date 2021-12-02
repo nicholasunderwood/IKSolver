@@ -1,13 +1,13 @@
 import processing.core.PApplet
-import util.Matrix
 import util.Pose2d
 import util.Vector2
 import kotlin.math.cos
 import kotlin.math.sin
+import Jama.Matrix
 
 class Arm {
     val joints: Array<Joint>
-    val dof: Int
+    val axes: Int
         get() = joints.size
 
     private val canvas: PApplet = App.ref
@@ -60,17 +60,21 @@ class Arm {
 
     fun getJointPositions() : Array<Double> = Array(joints.size) { joints[it].position }
 
-    fun getJointSpace() : Matrix = Matrix(joints.size, 1){ r,_ -> joints[r].position }
+    fun getJointSpace() : Matrix {
+        val m = Array(1){ Array(joints.size){ joints[it].position }}
+        return Matrix(2,1,0.0)
+    }
 
-    fun getEndEffector(jointSpace: Matrix): Matrix {
-        var v = base.pos.clone()
+    fun getEndEffector(jointSpace: DoubleArray): Vector2 {
+        var v = Vector2()
+        var m: Array<out Array<Double>> = Array(1){Array(2){0.0}}
 
-        for(i in 0..jointSpace.rows){
-            val dtheta = jointSpace.get(i,0)
-            v += Vector2(cos(dtheta), sin(dtheta)) * joints[i].length
+        for(i in 0..jointSpace.size){
+            v += Vector2(cos(jointSpace[i]), sin(jointSpace[i])) * joints[i].length
         }
 
-        return Matrix(2,1){r,_ -> v.get(r) }
+        return v
+
     }
 
     companion object {

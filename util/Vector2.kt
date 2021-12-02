@@ -1,5 +1,6 @@
 package util
 
+import Jama.Matrix
 import kotlin.math.hypot
 
 class Vector2 constructor(var x: Double, var y: Double) {
@@ -60,8 +61,12 @@ class Vector2 constructor(var x: Double, var y: Double) {
         return this * (1.0/dist());
     }
 
+    fun draw(extent: Float){
+        App.ref.circle(this.x.toFloat(), this.y.toFloat(), extent);
+    }
+
     fun toMatrix(): Matrix {
-        return Matrix(2,1){ r,_ -> this[r] }
+        return Matrix(2,1,0.0)
     }
 
     fun norm(other: Vector2): Vector2 {
@@ -74,5 +79,10 @@ class Vector2 constructor(var x: Double, var y: Double) {
 
     override fun toString(): String {
         return "($x, $y)"
+    }
+
+    companion object{
+        val i = Vector2(1.0,0.0)
+        val j = Vector2(0.0,1.0)
     }
 }

@@ -2,6 +2,7 @@
   <library name="p4core">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/p4core.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/Jama-1.0.3.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
