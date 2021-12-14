@@ -3,10 +3,24 @@ package util
 import Jama.Matrix
 import kotlin.math.hypot
 
-class Vector2 constructor(var x: Double, var y: Double) {
+class Vector2 constructor(x: Double, y: Double) {
 
-    constructor(i: Double) : this(i, i) {}
-    constructor() : this(0.0, 0.0) {}
+    private val vals: DoubleArray = doubleArrayOf(x, y)
+
+    var x: Double
+        get() = vals[0]
+        set(value: Double) { vals[0] = value }
+
+    var y: Double
+            get() = vals[1]
+            set(value: Double) { vals[1] = value }
+
+
+    constructor(x: Number, y: Number) : this(x.toDouble(), y.toDouble())
+    constructor(i: Double) : this(i, i)
+    constructor() : this(0.0, 0.0)
+    constructor(m: DoubleArray) : this(m[0], m[1])
+    constructor(m: Matrix):this( if(m.columnDimension > m.rowDimension) m.rowPackedCopy else m.columnPackedCopy  )
 
 
 //    operator fun set(x: Double, y: Double) {
@@ -27,13 +41,20 @@ class Vector2 constructor(var x: Double, var y: Double) {
     operator fun timesAssign(c: Double) {scale(c)}
 
     operator fun set(index: Int, value: Double){
-        if(index == 1) x = value
-        else y = value
+        vals[index] = value
     }
 
     private fun scale(c: Double) {
         x *= c
         y *= c
+    }
+
+    fun unit(): Vector2 {
+        return this * (1.0/dist())
+    }
+
+    fun toDoubleArray(): DoubleArray{
+        return vals.copyOf();
     }
 
     fun add(other: Vector2) {

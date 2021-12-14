@@ -58,23 +58,26 @@ class Arm {
         return null
     }
 
-    fun getJointPositions() : Array<Double> = Array(joints.size) { joints[it].position }
+    fun getJointPositions() : DoubleArray = DoubleArray(joints.size) { joints[it].position }
 
     fun getJointSpace() : Matrix {
         val m = Array(1){ Array(joints.size){ joints[it].position }}
         return Matrix(2,1,0.0)
     }
 
+
     fun getEndEffector(jointSpace: DoubleArray): Vector2 {
         var v = Vector2()
-        var m: Array<out Array<Double>> = Array(1){Array(2){0.0}}
-
-        for(i in 0..jointSpace.size){
+        for(i in jointSpace.indices){
             v += Vector2(cos(jointSpace[i]), sin(jointSpace[i])) * joints[i].length
         }
 
         return v
 
+    }
+
+    fun getEndEffector(): Vector2 {
+        return joints.last().endPose2d.pos - base.pos
     }
 
     companion object {

@@ -7,11 +7,11 @@ class Joint constructor(
         val parent: Joint?,
         val length: Double,
         startAngle: Double = 0.0,
-        private val maxAngle: Double = Math.PI / 2,
-        private val minAngle: Double = -Math.PI / 2
+        private val maxAngle: Double = Math.PI,
+        private val minAngle: Double = -Math.PI
 ) {
     private val canvas: PApplet = App.ref
-    private val maxSpeed = 3.0
+    private val maxSpeed = 0.5
 
     val basePose2d: Pose2d
         get() = parent?.endPose2d ?: Arm.base
@@ -35,8 +35,13 @@ class Joint constructor(
     }
 
     fun goToAngle(target: Double) {
-        targetAngle = target.coerceIn(minAngle, maxAngle)
+        targetAngle = target//.coerceIn(minAngle, maxAngle)
         isPID = true
+    }
+
+    fun setAngle(target: Double){
+        position = target//.coerceIn(minAngle, maxAngle)
+        isPID = false
     }
 
     private fun setEndPos(theta: Double) {
@@ -47,20 +52,23 @@ class Joint constructor(
     fun tick(dt: Double) {
         if (isPID) {
             velocity = (targetAngle - position) * 10
-            velocity = velocity.coerceIn(-1.0, 1.0)
+            velocity = velocity//.coerceIn(-1.0, 1.0)
         }
 
         position += dt * velocity * maxSpeed
-        position = position.coerceIn(minAngle, maxAngle)
+        position = position//.coerceIn(minAngle, maxAngle)
 
         setEndPos(position)
     }
 
     fun draw(jointRadius: Float) {
+        canvas.strokeWeight(5f)
         canvas.circle(endPose2d.x.toFloat(), endPose2d.y.toFloat(), jointRadius)
         canvas.line(basePose2d.x.toFloat(), basePose2d.y.toFloat(), endPose2d.x.toFloat(), endPose2d.y.toFloat())
 
 
+        canvas.strokeWeight(3f)
+        return
         canvas.line(
             basePose2d.x.toFloat(),
             basePose2d.y.toFloat(),
