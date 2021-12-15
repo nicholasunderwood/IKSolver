@@ -1,6 +1,7 @@
 package util
 
 import Jama.Matrix
+import java.security.DigestInputStream
 import kotlin.math.hypot
 
 class Vector2 constructor(x: Double, y: Double) {
@@ -98,11 +99,17 @@ class Vector2 constructor(x: Double, y: Double) {
         return Vector2(x, y)
     }
 
-    override fun toString(): String {
-        return "($x, $y)"
+    fun localize(base: Vector2) = Vector2(x + base.x, y - base.y)
+
+    fun toString(digits: Int = 2): String {
+        return "(%.${digits}f, %.${digits}f)".format(x,y)
+
     }
 
+    override fun toString(): String = toString(2)
+
     companion object{
+        val zero = Vector2()
         val i = Vector2(1.0,0.0)
         val j = Vector2(0.0,1.0)
     }

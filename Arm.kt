@@ -13,6 +13,8 @@ class Arm {
     private val canvas: PApplet = App.ref
     val maxLength: Double
 
+
+
     constructor(vararg mJoints: Joint) {
         joints = mJoints as Array<Joint>
         var length = 0.0

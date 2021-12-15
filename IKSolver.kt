@@ -6,13 +6,17 @@ import java.lang.RuntimeException
 
 class IKSolver constructor(private val arm: Arm){
 
+	private val f: Array<out (DoubleArray) -> Double> = arrayOf(
+		{ p: DoubleArray -> p.indices.sumByDouble { arm.joints[it].length * Math.sin((0..it).sumByDouble { i -> p[i] }) }},
+		{ p: DoubleArray -> p.indices.sumByDouble { arm.joints[it].length * Math.cos((0..it).sumByDouble { i -> p[i] }) } }
+	)
 
-	private val jac: Array<Array<out (Double) -> Double>> = arrayOf(
-		Array<(Double) -> Double>(arm.axes){ i -> { p ->
-			(i until arm.axes).sumByDouble { arm.joints[it].length * Math.cos( p + (i+1 until it).sumByDouble { k -> arm.joints[k].position } ) }
+	private val jac: Array<Array<out (DoubleArray) -> Double>> = arrayOf(
+		Array<(DoubleArray) -> Double>(arm.axes){ i -> { p: DoubleArray ->
+			(i until p.size).sumByDouble { arm.joints[it].length * Math.cos( (0..it).sumByDouble { k -> p[k] } ) }
 		}  },
-		Array<(Double) -> Double>(arm.axes){ i -> { p ->
-			(i until arm.axes).sumByDouble { arm.joints[it].length * -Math.sin( p + (i+1 until it).sumByDouble { k -> arm.joints[k].position } ) }
+		Array<(DoubleArray) -> Double>(arm.axes){ i -> { p: DoubleArray ->
+			(i until p.size).sumByDouble { arm.joints[it].length * -Math.sin( (0..it).sumByDouble { k -> p[k] } ) }
 		}  }
 	)
 
@@ -29,7 +33,7 @@ class IKSolver constructor(private val arm: Arm){
 		val h = makeColumMatrix((goal-p0).toDoubleArray()) // Column matrix of dP
 //		val dx = Matrix.random(3,1).times(Math.PI * 2).minus(Matrix(3,1,Math.PI));
 		val dx = Jx.times(h);
-		dx.print(4,2)
+//		dx.print(4,2)
 //		dThetas.print(4,2)
 		return dx.times(1/dx.normF()).columnPackedCopy
 	}
@@ -75,12 +79,18 @@ class IKSolver constructor(private val arm: Arm){
 		return Jx.times(h).columnPackedCopy;
 	}
 
-	private fun getTotalDerivative(vararg jointConfig: Double) : Matrix{
+	fun getEndEffectorPosition(p: DoubleArray) = Vector2(f[0](p), f[1](p))
+
+	fun getTotalDerivative(vararg jointConfig: Double) : Matrix{
 		val ar: Array<DoubleArray> = arrayOf(
-			DoubleArray(arm.axes) { jac[0][it](jointConfig[it]) },
-			DoubleArray(arm.axes) { jac[1][it](jointConfig[it]) }
+			DoubleArray(arm.axes) { jac[0][it](jointConfig) },
+			DoubleArray(arm.axes) { jac[1][it](jointConfig) }
 		)
 		return Matrix(ar)
+	}
+
+	fun getDirectionalDerivative(totalDerivative: Matrix, direction: DoubleArray): Matrix {
+		return totalDerivative * makeColumMatrix(direction)
 	}
 
 	private val sin: (Double) -> Double = {x: Double -> Math.sin(x)}

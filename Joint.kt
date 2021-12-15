@@ -11,7 +11,6 @@ class Joint constructor(
         private val minAngle: Double = -Math.PI
 ) {
     private val canvas: PApplet = App.ref
-    private val maxSpeed = 0.5
 
     val basePose2d: Pose2d
         get() = parent?.endPose2d ?: Arm.base
@@ -20,7 +19,9 @@ class Joint constructor(
         private set
 
     var position : Double = startAngle // [0,2pi]
-    private var velocity = 0.0 // [-1,1]
+    var velocity = 0.0 // [-1,1]
+        private set
+
     private var targetAngle = 0.0
     private var isPID = false
 
@@ -35,12 +36,12 @@ class Joint constructor(
     }
 
     fun goToAngle(target: Double) {
-        targetAngle = target//.coerceIn(minAngle, maxAngle)
+        targetAngle = target.coerceIn(minAngle, maxAngle)
         isPID = true
     }
 
     fun setAngle(target: Double){
-        position = target//.coerceIn(minAngle, maxAngle)
+        position = target.coerceIn(minAngle, maxAngle)
         isPID = false
     }
 
@@ -56,7 +57,7 @@ class Joint constructor(
         }
 
         position += dt * velocity * maxSpeed
-        position = position//.coerceIn(minAngle, maxAngle)
+        position = position.coerceIn(minAngle, maxAngle)
 
         setEndPos(position)
     }
@@ -82,6 +83,10 @@ class Joint constructor(
             (basePose2d.x + 30*sin(basePose2d.theta + maxAngle)).toFloat(),
             (basePose2d.y - 30*cos(basePose2d.theta + maxAngle)).toFloat()
         )
+    }
+
+    companion object{
+        val maxSpeed: Double = 5.0;
     }
 
 }

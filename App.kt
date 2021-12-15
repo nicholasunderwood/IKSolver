@@ -2,37 +2,35 @@ import processing.core.PApplet
 import processing.event.MouseEvent
 import util.Pose2d
 import util.Vector2
-import java.lang.RuntimeException
-import kotlin.math.abs
-import kotlin.math.sin
-import kotlin.math.cos
-
-import kotlin.math.acos
-import kotlin.math.hypot
+import kotlin.math.sign
 
 class App : PApplet() {
 
     private val arm: Arm
+    private var useIK: Boolean = false
     private val ikSolver: IKSolver
     private var isDragging: Boolean = false
     private var activeJoint: Joint? = null
-    private var endEffector: Vector2 = Vector2();
-    private var target: Vector2 = Vector2();
+    private var goal: Vector2 = Vector2()
+    private var target: Vector2 = Vector2()
 
-    private val endEffectorD: Double = 3.0;
-    private val dX: Vector2 = Vector2(endEffectorD, 0.0)
-    private val dY: Vector2 = Vector2(0.0, -endEffectorD)
-    private var dTarget: Vector2 = Vector2()
+    private val endEffectorD: Double = 3.0
+    private val map = mapOf(
+        UP to Vector2(0.0, -endEffectorD),
+        DOWN to Vector2(0.0, endEffectorD),
+        LEFT to Vector2(-endEffectorD, 0.0),
+        RIGHT to Vector2(endEffectorD, 0.0)
+    )
 
 
     init {
-        val width: Float = 900f
-        val height: Float = 900f
+        val width = 900f
+        val height = 900f
 
         ref = this
         arm = Arm(
             Pose2d((width / 2).toDouble(), (height / 2).toDouble(), 0.0),
-            150.0, 75.0, 75.0
+            150.0, 150.0
         )
         ikSolver = IKSolver(arm)
     }
@@ -48,7 +46,10 @@ class App : PApplet() {
         focused = true
         this.textAlign(CENTER, CENTER)
 
-        endEffector = arm.joints.last().endPose2d.pos
+        goal = arm.joints.last().endPose2d.pos
+
+//        arm.joints[0].setAngle(-Math.PI/4)
+//        arm.joints[1].setAngle(Math.PI/2)
     }
 
     // Continuously draws and updates the application display window
@@ -62,28 +63,28 @@ class App : PApplet() {
 
         strokeWeight(0f)
         fill(255f, 0f, 0f)
-        endEffector += dTarget
-        endEffector.draw(10f)
+//        (goal + Arm.base.pos).draw(10f)
 
-        target = (endEffector - Arm.base.pos).unit()
-        println(target)
 
-        if(arm.getEndEffector().dist(target) > 2.0){
-            var dx: DoubleArray = try { ikSolver.getIK(target, 5000) } catch (e: IllegalArgumentException) { print(e.message); return }
-
-            for(i in (0..0)){
-                break;
-                dx = ikSolver.refineSolution(target, dx)
-            }
-            print(dx)
-            arm.joints.forEachIndexed { i,j -> j.setVelocity(dx[i])}
-//            arm.joints.forEachIndexed { i,j -> j.setAngle(j.position + dx[i])}
-//            arm.joints.forEachIndexed  { i,j -> j.setAngle(j.position + dx[i])}
-
+        if(useIK){
+            applyIK()
         } else {
-            arm.joints.forEach { it.setVelocity(0.0)}
+            applyFK()
         }
 
+        // draw f(p)
+        val prospectiveEndEffector = ikSolver.getEndEffectorPosition(arm.joints.map{it.position}.toDoubleArray())
+
+        prospectiveEndEffector.localize(Arm.base.pos).draw(20f)
+
+
+        // draw derivative
+        val endEffector = arm.getEndEffector() + Arm.base.pos
+        val velocities: DoubleArray = arm.joints.map {it.velocity}.toDoubleArray()
+        val dP = ikSolver.getDirectionalDerivative(ikSolver.getTotalDerivative(*arm.getJointPositions()), velocities).times(Joint.maxSpeed/5.0)
+
+        strokeWeight(5f);
+        line(endEffector.x.toFloat(), endEffector.y.toFloat(), (endEffector.x + dP[0,0]).toFloat(), (endEffector.y - dP[1,0]).toFloat())
 
 //        var i = 0;
 //        val ty = arm.joints.sumByDouble { j -> i++; Math.cos(arm.joints.copyOfRange(0, i).sumByDouble{ it.position }) * j.length  }
@@ -99,59 +100,79 @@ class App : PApplet() {
 
     }
 
+    private fun zeroArm(){
+        arm.joints.forEach { it.setVelocity(0.0) }
+    }
+
+    private fun applyIK(){
+        target = (goal - Arm.base.pos)
+        if(arm.getEndEffector().dist(target) > 2.0){
+            var dx: DoubleArray = try { ikSolver.getIK(target, 5000) } catch (e: IllegalArgumentException) { print(e.message); return }
+
+            for(i in (0..0)){
+                break;
+                dx = ikSolver.refineSolution(target, dx)
+            }
+//            print(dx)
+            arm.joints.forEachIndexed { i,j -> j.setVelocity(dx[i])}
+//            arm.joints.forEachIndexed { i,j -> j.setAngle(j.position + dx[i])}
+//            arm.joints.forEachIndexed  { i,j -> j.setAngle(j.position + dx[i])}
+
+        } else {
+            arm.joints.forEach { it.setVelocity(0.0)}
+        }
+    }
+
+    private fun applyFK(){
+        activeJoint ?: return
+        fill(255f, 0f, 0f)
+//        target.draw(10f)
+    }
+
     override fun mousePressed(event: MouseEvent) {
         super.mousePressed(event)
+        activeJoint = arm.isOnJointEnd(mouseX, mouseY) ?: return
 
-        if(Vector2(this.mouseX, this.mouseY).dist(endEffector) < 10) return
+        if(useIK){
+            zeroArm()
+        }
+        useIK = false;
 
-        isDragging = true
         mouseDragged(event)
-//        endEffector = Vector2(mouseX.toDouble(), mouseY.toDouble())
     }
 
     override fun mouseDragged(event: MouseEvent) {
         super.mouseDragged()
-        endEffector = Vector2(mouseX.toDouble(), mouseY.toDouble())
+        val j: Joint = activeJoint ?: return;
 
-        target = endEffector - Arm.base.pos
+        val endEffector = Vector2(mouseX.toDouble(), mouseY.toDouble())
+
+        target = endEffector - j.basePose2d.pos
 
         strokeWeight(0f); fill(255f,0f,0f)
+
+//        var targetPos: Double = -Math.atan(target.x/target.y) + j.basePose2d.theta
+        var targetPos = Math.acos(-target.y/target.dist()) * sign(target.x) - j.basePose2d.theta;
+
+//        println(targetPos * 180 / Math.PI)
+        j.goToAngle(targetPos)
+    }
+
+    override fun mouseReleased() {
+        super.mouseReleased()
+        activeJoint = null;
     }
 
     override fun keyPressed() {
         super.keyPressed()
-        when (keyCode) {
-            UP -> {
-                dTarget += dY
-            }
-            DOWN -> {
-                dTarget -= dY
-            }
-            RIGHT -> {
-                dTarget += dX
-            }
-            LEFT -> {
-                dTarget -= dX
-            }
+        if(keyCode in map){
+            goal += map[keyCode] ?: Vector2.zero
         }
-    }
 
-    override fun keyReleased() {
-        super.keyReleased()
-        when (keyCode) {
-            UP -> {
-                dTarget -= dY
-            }
-            DOWN -> {
-                dTarget += dY
-            }
-            RIGHT -> {
-                dTarget -= dX
-            }
-            LEFT -> {
-                dTarget += dX
-            }
+        if(!useIK){
+            zeroArm()
         }
+        useIK = true
     }
 
     fun calcDTheta(target: Vector2, start: Vector2, base: Vector2): Double{
